@@ -51,29 +51,35 @@ MessengerBot R with API LEVEL 2 / BABELjs
             "nickName": "str"
         }]
         },
-    "attachment": null
+    "attachment": null,
+    "v": {
+        "origin": "~~~",
+    }
 }
 ```
 ```js
 {
     "type": 0,
     "message": {
-        "feedType": 13,
+        "feedType": 13, //hidden(가리기)
         "members": [{
-            "logId": bigInt, //????
+            "logId": bigInt, //uid link to hidden msg
             "type": 1
         }]
         },
     "attachment": null,
+    "v": {
+        "origin": "SYNCREWR",
+    }
 }
 ```
 ```js
 {
     "type": 0,
     "message": {
-        "feedType": 13,
+        "feedType": 13, //hidden(가리기)
         "members": [{
-            "logId": bigInt, //????
+            "logId": bigInt, //self
             "type": 1
         }]
         },
