@@ -1,8 +1,6 @@
 # KYFW
 a rhino-javascript chatbot framework
 
-One Paragraph of project description goes here
-
 ### Prerequisites
 
 ```
@@ -42,7 +40,7 @@ MessengerBot R with API LEVEL 2 / BABELjs
 
 ### msg types
 
-##### 0: line-type notice (ex. 입/퇴장, 가리기)
+#### 0: line-type notice (ex. 입/퇴장, 가리기)
 ```js
 {
     "type": 0,
@@ -66,11 +64,29 @@ MessengerBot R with API LEVEL 2 / BABELjs
             "type": 1
         }]
         },
-    "attachment": null
+    "attachment": null,
+}
+```
+```js
+{
+    "type": 0,
+    "message": {
+        "feedType": 13,
+        "members": [{
+            "logId": bigInt, //????
+            "type": 1
+        }]
+        },
+    "attachment": null,
+    "v": {
+        "origin": "MSG",
+        "previous_message": "str",
+        "previous_enc": int
+    }
 }
 ```
 
-##### 1: text
+#### 1: text
 ```js
 {
     "type": 1,
