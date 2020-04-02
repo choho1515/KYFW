@@ -45,7 +45,7 @@ MessengerBot R with API LEVEL 2 / BABELjs
 {
     "type": 0,
     "message": {
-        "feedType": 4,
+        "feedType": int, // 2: self, 1: manager(방장) kick, 4: mod(부방장) kick
         "members": [{
             "userId": int,
             "nickName": "str"
@@ -53,7 +53,7 @@ MessengerBot R with API LEVEL 2 / BABELjs
         },
     "attachment": null,
     "v": {
-        "origin": "~~~",
+        "origin": "~~~", //NEWMEM: enter, DELMEM: exit
     }
 }
 ```
@@ -61,15 +61,13 @@ MessengerBot R with API LEVEL 2 / BABELjs
 {
     "type": 0,
     "message": {
-        "feedType": 13, //hidden(가리기)
-        "members": [{
-            "logId": bigInt, //uid link to hidden msg
-            "type": 1
-        }]
+        "feedType": int, //13: hidden(가리기), 14: deleted(삭메)
+        "logId": bigInt, //uid link to hidden msg
+        "type": 1
         },
     "attachment": null,
     "v": {
-        "origin": "SYNCREWR",
+        "origin": "~~~", //SYNCREWR: hidden, SYNCDLMSG: deleted
     }
 }
 ```
@@ -78,10 +76,8 @@ MessengerBot R with API LEVEL 2 / BABELjs
     "type": 0,
     "message": {
         "feedType": 13, //hidden(가리기)
-        "members": [{
-            "logId": bigInt, //self
-            "type": 1
-        }]
+        "logId": bigInt, //self
+        "type": 1
         },
     "attachment": null,
     "v": {
