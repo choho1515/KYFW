@@ -5,6 +5,39 @@ const setting = {
     }
 }
 
+function DBF_structure(myid) {
+    return {
+        'chat_logs': {
+            loc: 'DB1',
+            index: '_id',
+            salt: ['user_id', 'v.enc'],
+            decrypt: ['message', 'attachment'],
+            parse: ['attachment', 'v']
+        },
+        'friends': {
+            loc: 'DB2',
+            index: 'id',
+            salt: [myid, 'enc'],
+            decrypt: ['name', 'profile_image_url', 'full_profile_image_url', 'original_profile_image_url', 'v'],
+            parse: ['v']
+        },
+        'chat_rooms': {
+            loc: 'DB1',
+            index: 'id',
+            salt: ['user_id', 'v.enc'],
+            decrypt: [ /*performance impact*/ ],
+            parse: ['v'/*, 'members', 'active_member_ids', 'watermarks', 'meta', 'moim_meta'*/]
+        },
+        'open_link': {
+            loc: 'DB2',
+            index: 'id',
+            salt: [],
+            decrypt: [],
+            parse: ['v']
+        },
+    }
+}
+
 const MainThread = (function () {
     const setting = setting.watchdog
     function MainThread() {
