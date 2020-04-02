@@ -14,13 +14,13 @@ MessengerBot R with API LEVEL 2 / BABELjs
 ### chat types
 
 0: line-type notice (ex. 입/퇴장, 가리기)
-'''javascript
+```js
 {
     "type": 0,
     "message": {\"feedType\":4,\"members\":[{\"userId\":integer,\"nickName\":\"string\"}]},
     "attachment": null
 }
-'''
+```
 1: text
 2: photo "사진"
 3: video "동영상"
