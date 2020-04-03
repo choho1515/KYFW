@@ -26,7 +26,7 @@ function DBF_structure(myid) {
             index: 'id',
             salt: ['user_id', 'v.enc'],
             decrypt: [ /*performance impact*/ ],
-            parse: ['v'/*, 'members', 'active_member_ids', 'watermarks', 'meta', 'moim_meta'*/]
+            parse: ['v' /*, 'members', 'active_member_ids', 'watermarks', 'meta', 'moim_meta'*/ ]
         },
         'open_link': {
             loc: 'DB2',
@@ -40,6 +40,7 @@ function DBF_structure(myid) {
 
 const MainThread = (function () {
     const setting = setting.watchdog
+
     function MainThread() {
         this.looper = this.index = null;
         return this;
@@ -186,47 +187,69 @@ const DBfetcher = (function () {
     return DBfetcher
 }())
 
+//why use prototype?
 const DBitem = (function () {
     function DBitem(prop) {
         this.prop = prop
-        this.data = {}
+        this.data = {
+            __data__: {},
+            __primitive__: {}
+        }
     }
     DBitem.prototype.get = function (cursor) {
-        const {
-            decrypt,
-            parse,
-            column
-        } = this.prop
-        for (let i in column) {
-            let [key, value] = [column[i], String(cursor.getString(i))]
-            if (parse.indexOf(key) != -1 && decrypt.indexOf(key) == -1) {
-                try {
-                    value = JSONbig.parse(value)
-                } catch (e) {}
-            }
-            this.data[key] = value
-        }
-        return this
-    }
-    DBitem.prototype.decrypt = function () {
         const {
             salt,
             decrypt,
             parse,
+            column
         } = this.prop
-        if (salt.length != 2) return
-        for (let i in decrypt) {
-            let key = decrypt[i]
-            let salty = Array(2)
-            for (let j in salt) {
-                let saalt = typeof (salt[j]) == 'number' ? salt[j] : salt[j].split('.')
-                salty[j] = typeof (salt[j]) == 'number' ? salt[j] : saalt.length > 1 ? this.data[saalt[0]][saalt[1]] : this.data[salt[j]]
+        const execute =  {
+            parse: function (i) {
+                this.__data__[i] = this.__data__[i] || JSON.parse(this.__primitive__[i])
+                return this.__data__[i]
+            },
+            bigParse: function (i) {
+                this.__data__[i] = this.__data__[i] || JSONbig.parse(this.__primitive__[i])
+                return this.__data__[i]
+            },
+            decrypt (i, isParse) {
+                const {
+                    salt,
+                    decrypt,
+                    parse,
+                } = this.prop
+                if (salt.length != 2) return
+                for (let i in decrypt) {
+                    let key = decrypt[i]
+                    let salty = Array(2)
+                    for (let j in salt) {
+                        let saalt = typeof (salt[j]) == 'number' ? salt[j] : salt[j].split('.')
+                        salty[j] = typeof (salt[j]) == 'number' ? salt[j] : saalt.length > 1 ? this.data[saalt[0]][saalt[1]] : this.data[salt[j]]
+                    }
+                    this.data[key] = decrypter.execute(salty[0], salty[1], this.data[key])
+                    if (parse.indexOf(key) != -1) {
+                        try {
+                            this.data[key] = JSONbig.parse(this.data[key])
+                        } catch (e) {}
+                    }
+                }
+                return this //note: add processing isParse(default or bigInt)
             }
-            this.data[key] = decrypter.execute(salty[0], salty[1], this.data[key])
-            if (parse.indexOf(key) != -1) {
-                try {
-                    this.data[key] = JSONbig.parse(this.data[key])
-                } catch (e) {}
+        }
+        for (let i in column) {
+            let [key, value] = [column[i], String(cursor.getString(i))]
+            this.data.__primitive__[key] = value
+            for (var prop in foo.__primitive__) {
+                let method = //DBF structure에서 가져오기
+                //클로저
+                (function (i,j) {
+                    //calculated-on-call object value
+                    Object.defineProperty(foo, i, {
+                        get() {
+                            return execute[j].call(this, i)
+                        }
+                    });
+                })(prop, method)
             }
         }
         return this
