@@ -1,7 +1,37 @@
-const setting = {
+const SQLiteDatabase = android.database.sqlite.SQLiteDatabase
+const DatabaseUtils = android.database.DatabaseUtils
+const Jsoup = org.jsoup.Jsoup.connect
+
+const _Array = java.lang.reflect.Array
+const _Byte = java.lang.Byte
+const _Integer = java.lang.Integer
+const _String = java.lang.String
+const Timer = java.util.Timer
+const TimerTask = java.util.TimerTask
+
+const JSONObject = org.json.JSONObject
+
+const blank = " " + "\u200B".repeat(500) + '\n\n\n';
+
+
+const SETTING = {
     watchdog: {
         maxLength: 100,
         interval: 250
+    }
+}
+
+String.prototype.format = function () {
+    return this.replace(/\$(\d)/gi, (a, b) => Array.from(arguments)[b - 1]);
+}
+
+function response(room, msg, sender, isGroupChat, replier, imageDB, packageName, threadId) {
+    if (msg.startsWith('., ')) {
+        try {
+            replier.reply(eval(msg.substr(msg.split(' ', 1)[0].length + 1)));
+        } catch (e) {
+            replier.reply('error!\nlineNumber: ' + e.lineNumber + '\nmessage : ' + e.message)
+        }
     }
 }
 
@@ -10,23 +40,92 @@ function DBF_structure(myid) {
         'chat_logs': {
             loc: 'DB1',
             index: '_id',
-            salt: ['user_id', 'v.enc'],
-            decrypt: ['message', 'attachment'],
-            parse: ['attachment', 'v']
+            salt: ['user_id', ['v', 'enc']],
+            execute: {
+                _id: {
+                    parse: true
+                },
+                type: {
+                    parse: true
+                },
+                message: {
+                    decrypt: true
+                },
+                attachment: {
+                    decrypt: true,
+                    bigParse: true
+                },
+                created_at: {
+                    parse: true
+                },
+                deleted_at: {
+                    parse: true
+                },
+                client_message_id: {
+                    parse: true
+                },
+                supplement: {
+                    parse: true
+                },
+                v: {
+                    parse: true
+                }
+            }
         },
         'friends': {
             loc: 'DB2',
             index: 'id',
             salt: [myid, 'enc'],
-            decrypt: ['name', 'profile_image_url', 'full_profile_image_url', 'original_profile_image_url', 'v'],
-            parse: ['v']
+            execute: {
+                name: {
+                    decrypt: true
+                },
+                profile_image_url: {
+                    decrypt: true
+                },
+                full_profile_image_url: {
+                    decrypt: true
+                },
+                original_profile_image_url: {
+                    decrypt: true
+                },
+                v: {
+                    decrypt:true,
+                    parse: true
+                }
+            },
         },
         'chat_rooms': {
             loc: 'DB1',
             index: 'id',
-            salt: ['user_id', 'v.enc'],
-            decrypt: [ /*performance impact*/ ],
-            parse: ['v' /*, 'members', 'active_member_ids', 'watermarks', 'meta', 'moim_meta'*/ ]
+            salt: ['user_id', ['v', 'enc']],
+            execute: {
+                members: {
+                    bigParse: true
+                },
+                active_member_ids: {
+                    bigParse: true
+                },
+                last_message: {
+                    decrypt: true
+                },
+                watermarks: {
+                    bigParse: true
+                },
+                v: {
+                    decrypt:true,
+                    parse: true
+                },
+                meta: {
+                    bigParse: true
+                },
+                private_meta: {
+                    parse: true
+                },
+                moim_meta: {
+                    bigParse: true
+                },
+            },
         },
         'open_link': {
             loc: 'DB2',
@@ -37,9 +136,10 @@ function DBF_structure(myid) {
         },
     }
 }
+const typeException = ['1']
 
 const MainThread = (function () {
-    const setting = setting.watchdog
+    const setting = SETTING.watchdog
 
     function MainThread() {
         this.looper = this.index = null;
@@ -169,7 +269,7 @@ const DBfetcher = (function () {
             this[this.col[table].loc].rawQuery(args.query, null)
         if (!args.range) {
             cursor.moveToNext()
-            let ret = new DBitem(this.col[table]).get(cursor)
+            let ret = new DBitem(table, this.col[table]).get(cursor)
             cursor.close()
             return ret
         }
@@ -177,7 +277,7 @@ const DBfetcher = (function () {
         !args.range[1] ? cursor.moveToNext() : cursor.moveToLast()
         try {
             for (let i = 0; i < args.range[0]; ++i) {
-                ret.push(new DBitem(this.col[table]).get(cursor))
+                ret.push(new DBitem(table, this.col[table]).get(cursor))
                 args.range[1] ? cursor.moveToPrevious() : cursor.moveToNext()
             }
         } catch (e) {}
@@ -187,72 +287,89 @@ const DBfetcher = (function () {
     return DBfetcher
 }())
 
+
 //why use prototype?
 const DBitem = (function () {
-    function DBitem(prop) {
-        this.prop = prop
+    function DBitem(table, prop) {
+        this.table = table;
+        this.prop = prop;
         this.data = {
             __data__: {},
-            __primitive__: {}
-        }
+            __primitive__: {},
+            __props__: {}
+        };
     }
     DBitem.prototype.get = function (cursor) {
         const {
+            column,
             salt,
-            decrypt,
-            parse,
-            column
-        } = this.prop
-        const execute =  {
-            parse: function (i) {
-                this.__data__[i] = this.__data__[i] || JSON.parse(this.__primitive__[i])
-                return this.__data__[i]
-            },
-            bigParse: function (i) {
-                this.__data__[i] = this.__data__[i] || JSONbig.parse(this.__primitive__[i])
-                return this.__data__[i]
-            },
-            decrypt (i, isParse) {
-                const {
-                    salt,
-                    decrypt,
-                    parse,
-                } = this.prop
-                if (salt.length != 2) return
-                for (let i in decrypt) {
-                    let key = decrypt[i]
-                    let salty = Array(2)
-                    for (let j in salt) {
-                        let saalt = typeof (salt[j]) == 'number' ? salt[j] : salt[j].split('.')
-                        salty[j] = typeof (salt[j]) == 'number' ? salt[j] : saalt.length > 1 ? this.data[saalt[0]][saalt[1]] : this.data[salt[j]]
-                    }
-                    this.data[key] = decrypter.execute(salty[0], salty[1], this.data[key])
-                    if (parse.indexOf(key) != -1) {
-                        try {
-                            this.data[key] = JSONbig.parse(this.data[key])
-                        } catch (e) {}
-                    }
-                }
-                return this //note: add processing isParse(default or bigInt)
-            }
-        }
+            execute
+        } = this.prop;
+
         for (let i in column) {
-            let [key, value] = [column[i], String(cursor.getString(i))]
-            this.data.__primitive__[key] = value
-            for (var prop in foo.__primitive__) {
-                let method = //DBF structure에서 가져오기
-                //클로저
-                (function (i,j) {
-                    //calculated-on-call object value
-                    Object.defineProperty(foo, i, {
-                        get() {
-                            return execute[j].call(this, i)
-                        }
-                    });
-                })(prop, method)
-            }
+            let [key, value] = [column[i], String(cursor.getString(i))];
+            this.data.__primitive__[key] = value;
         }
-        return this
+
+        let salty = Array(2);
+        for (let j in salt) {
+            if (Array.isArray(salt[j])) {
+                this.data.__data__[salt[j][0]] = JSON.parse(this.data.__primitive__[salt[j][0]]);
+                salty[j] = this.data.__data__[salt[j][0]][salt[j][1]];
+            } else salty[j] = this.data.__primitive__[salt[j]];
+        }
+        this.data.__props__.salt = salty;
+
+        let foo = this.data;
+        for (var data in foo.__primitive__) {
+            let method = {};
+            execute[data] && Object.assign(method, execute[data]);
+
+            if (this.table === 'chat_logs' && data === 'message' && typeException.indexOf(JSON.parse(foo.__primitive__.type) == -1)) {
+                method.parse = true;
+            }
+            //클로저
+            (function (data, method) {
+                Object.defineProperty(foo, data, {
+                    get() {
+                        this.__data__[data] = this.__data__[data] || (() => {
+                            const dbkey = new DBkey(this.__primitive__[data]);
+                            if (method.decrypt) dbkey.decrypt(this.__props__.salt);
+                            if (method.parse) dbkey.parse();
+                            if (method.bigParse) dbkey.bigParse();
+                            return dbkey.data;
+                        })()
+                        return this.__data__[data];
+                    }
+                });
+            })(data, method)
+        }
+        return this.data;
     }
     return DBitem
+}())
+
+const DBkey = (function () {
+    function DBkey(prop) {
+        this.data = prop
+    }
+    DBkey.prototype.parse = function (i) {
+        try {
+            this.data = JSON.parse(this.data)
+        } catch (e) {}
+        return this.data
+    }
+    DBkey.prototype.bigParse = function (i) {
+        try {
+            this.data = JSONbig.parse(this.__primitive__[i])
+        } catch (e) {}
+        return this.data
+    }
+    DBkey.prototype.decrypt = function (salt) {
+        try {
+            this.data = decrypter.execute(salt[0], salt[1], this.data)
+        } catch (e) {}
+        return this.data
+    }
+    return DBkey
 }())
