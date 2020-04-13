@@ -1,4 +1,5 @@
 module.exports = {
+    typeException: ['1', '26'],
     structure: function (myid) {
         return {
             'chat_logs': {
@@ -99,6 +100,5 @@ module.exports = {
                 parse: ['v']
             },
         }
-    },
-    typeException: ['1', '26']
+    }
 }

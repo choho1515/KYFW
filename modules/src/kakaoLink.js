@@ -2,27 +2,28 @@
 const cryptoModule = require('./utils/crypto');
 const CryptoJS = cryptoModule.CryptoJS;
 
-exports.Kakao = function() {
-    function Kakao() {
+exports.KakaoLink = function() {
+    function KakaoLink() {
         this.apiKey = null;
         this.cookies = {};
         this.loginReferer = null;
         this.cryptoKey = null;
         this.parsedTemplate = null;
         this.csrf = null;
+        return this;
     }
-    Kakao.prototype.init = function(apiKey) {
+    KakaoLink.prototype.init = function(apiKey) {
         if(typeof apiKey !== 'string' || apiKey.length !== 32) throw new TypeError('api key ' + apiKey + ' is not valid api key');
         this.apiKey = apiKey;
         return this;
     }
-    Kakao.prototype.isInitialized = function() { return !!this.apiKey; }
-    Kakao.prototype.static = {
+    KakaoLink.prototype.isInitialized = function() { return !!this.apiKey; }
+    KakaoLink.prototype.static = {
         ua: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36',
         ct: 'application/x-www-form-urlencoded',
         ka: 'sdk/1.36.6 os/javascript lang/en-US device/Win32 origin/http%3A%2F%2Flt2.kr'
     }
-    Kakao.prototype.login = function(id, password) {
+    KakaoLink.prototype.login = function(id, password) {
         if(!this.isInitialized()) throw new ReferenceError('method login is called before initialization');
         if(typeof id !== 'string') throw new TypeError('invalid id type ' + typeof id);
         if(typeof password !== 'string') throw new TypeError('invalid password type ' + typeof password);
@@ -87,7 +88,7 @@ exports.Kakao = function() {
             });
         }).bind(this)();
     }
-    Kakao.prototype.send = function(roomTitle, data, type) {
+    KakaoLink.prototype.send = function(roomTitle, data, type) {
         type = type || 'default';
         
         (function proceed() {
@@ -175,5 +176,5 @@ exports.Kakao = function() {
         }).bind(this)();
     }
 
-    return Kakao;
+    return KakaoLink;
 };

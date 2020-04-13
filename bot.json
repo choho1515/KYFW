@@ -1,7 +1,7 @@
 {
     "main": "index.js",
     "option": {
-        "apiLevel": 1,
+        "apiLevel": 2,
         "useUnifiedParams": false,
         "useBabel": false
     }

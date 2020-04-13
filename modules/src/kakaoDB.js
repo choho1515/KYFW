@@ -1,10 +1,10 @@
 const DecryptModule = require('./utils/decrypter')
 const Decrypter = DecryptModule.Decrypt();
 
-const Setting = require('./setting/kakaoDB')
+const SETTING = require('./setting/kakaoDB')
 
-exports.Fetcher = function () {
-    function Fetcher() {
+exports.KakaoDB = function () {
+    function KakaoDB() {
         this.grant()
         this.DB1 = SQLiteDatabase.openDatabase("/data/data/com.kakao.talk/databases/KakaoTalk.db", null, SQLiteDatabase.CREATE_IF_NECESSARY)
         this.DB2 = SQLiteDatabase.openDatabase("/data/data/com.kakao.talk/databases/KakaoTalk2.db", null, SQLiteDatabase.CREATE_IF_NECESSARY)
@@ -14,19 +14,19 @@ exports.Fetcher = function () {
         cur.moveToNext()
         this.myid = Number(cur.getString(0))
 
-        this.col = Setting.structure(this.myid)
+        this.col = SETTING.structure(this.myid)
 
         this.init()
         return this
     }
-    Fetcher.prototype.grant = function () {
+    KakaoDB.prototype.grant = function () {
         java.lang.Runtime.getRuntime().exec([
             "su",
             "mount -o remount rw /data/data/com.kakao.talk/databases",
             "chmod -R 777 /data/data/com.kakao.talk/databases",
         ]).waitFor()
     }
-    Fetcher.prototype.init = function () {
+    KakaoDB.prototype.init = function () {
         //fetch myid key
         for (let i = 20; i <= 28; i++) Decrypter.derive(this.myid, i)
         //fetch col name
@@ -34,14 +34,14 @@ exports.Fetcher = function () {
             this.col[i].column = JSON.parse(String(org.json.JSONArray(this[this.col[i].loc].query(i, null, null, null, null, null, null).getColumnNames())))
         }
     }
-    Fetcher.prototype.index = function () {
+    KakaoDB.prototype.index = function () {
         const cur = this.DB1.rawQuery("SELECT * FROM sqlite_sequence WHERE name = ?", ['chat_logs'])
         cur.moveToNext()
         const ret = String(cur.getString(1))
         cur.close()
         return ret
     }
-    Fetcher.prototype.get = function (table, index, args) {
+    KakaoDB.prototype.get = function (table, index, args) {
         if (!args) args = {} // query(string), id(string), range(arr[int, bool])
         if (Object.keys(this.col).indexOf(table) == -1) return false
         let cursor = !args.query ?
@@ -64,8 +64,8 @@ exports.Fetcher = function () {
         cursor.close()
         return ret
     }
-    return Fetcher
-}()
+    return KakaoDB
+}
 
 
 const DBitem = (function () {
@@ -110,7 +110,7 @@ const DBitem = (function () {
             let method = {};
             execute[data] && Object.assign(method, execute[data]);
 
-            if (this.table === 'chat_logs' && data === 'message' && Setting.typeException.indexOf(JSON.parse(foo.__primitive__.type) == -1)) {
+            if (this.table === 'chat_logs' && data === 'message' && SETTING.typeException.indexOf(JSON.parse(foo.__primitive__.type) == -1)) {
                 method.parse = true;
             }
             //클로저
