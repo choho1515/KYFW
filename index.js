@@ -16,7 +16,7 @@ Bot.setCommandPrefix('!');
 
 //Bot.addListener(Event.COMMAND, onCmd)
 Bot.addListener(Event.MESSAGE, onMsg);
-//Bot.addListener(Event.START_COMPILE, onStartCompile)
+Bot.addListener(Event.START_COMPILE, onStartCompile)
 
 function onMsg(msg) {
     if (msg.content.split(' ')[0] == ',,') {
@@ -30,27 +30,57 @@ function onMsg(msg) {
 
 var modules = require('index');
 
-const MainThread = new (modules.main.MainThread());
+const MainThread = new(modules.main.MainThread());
 
-const KakaoDB = new (modules.src.KakaoDB());
+const KakaoDB = new(modules.src.KakaoDB());
 
-const Checker = new (modules.main.Checker(KakaoDB.index()));
+const Checker = new(modules.main.Checker(KakaoDB.index()));
 Broadcast.register('onInterval', function () {
     Checker.check(KakaoDB)
 })
 
 Broadcast.register('onMsg', function (i) {
-    let msg = KakaoDB.get('chat_logs', i)
-    Log.d(msg.message)
+    try {
+        let time = new Date().getTime();
+        let chat = KakaoDB.get('chat_logs', i);
+
+        let now = (time / 1000);
+        if (now - chat.created_at > 3600) {
+            return;
+        } else if (now - chat.created_at > 10) {
+            this.active = false;
+        } else this.active = true;
+
+        if (chat.v.isMine) return;
+
+        let room = KakaoDB.get('chat_rooms', chat.chat_id);
+        if (room.type != 'OM') return;
+        try {
+            room.name = room.private_meta.name
+        } catch (e) {}
+        if (!room.name) return;
+        if (room.name[0] != '●' && room.name[0] != '■') return;
+
+        let user = KakaoDB.get('friends', chat.user_id);
+
+        if (!this.active) return
+
+        Log.d(new Date().getTime() - time)
+        Log.d(chat.message)
+    } catch (e) {
+        Log.d('error!\nlineNumber: ' + e.lineNumber + '\nmessage : ' + e.message)
+    }
 })
 
 MainThread.start();
 
-
+function onStartCompile() {
+    try {
+        MainThread.stop();
+    } catch (e) {}
+}
 
 const BLANK = " " + "\u200B".repeat(500) + '\n\n\n';
-
-
 
 String.prototype.format = function () {
     return this.replace(/\$(\d)/gi, (a, b) => Array.from(arguments)[b - 1]);

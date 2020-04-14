@@ -1,7 +1,10 @@
-const DecryptModule = require('./utils/decrypter')
+const DecryptModule = require('./utils/decrypter');
 const Decrypter = DecryptModule.Decrypt();
+const JSONbig = {};
+JSONbig.parse = require('./utils/JSONbig').JSONbig;
 
-const SETTING = require('./setting/kakaoDB')
+
+const SETTING = require('./setting/kakaoDB');
 
 exports.KakaoDB = function () {
     function KakaoDB() {
@@ -101,6 +104,8 @@ const DBitem = (function () {
             if (Array.isArray(salt[j])) {
                 this.data.__reference__[salt[j][0]] = JSON.parse(this.data.__primitive__[salt[j][0]]);
                 salty[j] = this.data.__reference__[salt[j][0]][salt[j][1]];
+            } else if (typeof salt[j] == 'number') {
+                salty[j] = salt[j]
             } else salty[j] = this.data.__primitive__[salt[j]];
         }
         this.data.__props__.salt = salty;
@@ -111,7 +116,7 @@ const DBitem = (function () {
             execute[data] && Object.assign(method, execute[data]);
 
             if (this.table === 'chat_logs' && data === 'message' && SETTING.typeException.indexOf(JSON.parse(foo.__primitive__.type) == -1)) {
-                method.parse = true;
+                method.bigParse = true;
             }
             //클로저
             (function (data, method) {
@@ -146,7 +151,7 @@ const DBkey = (function () {
     }
     DBkey.prototype.bigParse = function (i) {
         try {
-            this.data = JSONbig.parse(this.__primitive__[i])
+            this.data = JSONbig.parse(this.data)
         } catch (e) {}
         return this.data
     }

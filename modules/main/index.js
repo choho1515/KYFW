@@ -1,6 +1,6 @@
 module.exports = {
     MainThread: require('./MainThread').MainThread,
     Checker: require('./Checker').Checker,
-    Handle: require('./Handle').Handle,
-    Execute: require('./Execute').Execute
+    Handle: require('./Handler').Handle,
+    Execute: require('./Executor').Execute
 }
