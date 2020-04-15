@@ -1,4 +1,5 @@
 module.exports = {
     KakaoDB: require('./KakaoDB').KakaoDB,
-    KakaoLink: require('./KakaoLink').KakaoLink
+    KakaoLink: require('./KakaoLink').KakaoLink,
+    Command: require('./Command').Command
 }

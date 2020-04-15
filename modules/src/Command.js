@@ -11,7 +11,7 @@ exports.Command = function () {
         if (!foo.checkCommand()) return null;
         let final = foo.checkMarkdown();
         if (!final) return null;
-        return []
+        return {command: final.command, props: final.props}
     }
     return MainThread
 }
@@ -19,7 +19,9 @@ exports.Command = function () {
 const CommandItem = (function () {
     function CommandItem(prop, msg) {
         this.data = prop;
+        this.msg = msg;
         this.$msg = msg.split(' ', 1);
+        this.command = null;
     }
     CommandItem.prototype.checkPrefix = function () {
         if (this.$msg[0] == '!') return this;
@@ -33,10 +35,10 @@ const CommandItem = (function () {
         }
         return null;
     }
-    CommandItem.prototype.checkMarkdown = function (a, b) {
+    CommandItem.prototype.checkMarkdown = function () {
         var ret = {}
-        var msg_l = a.split('\n')
-        var $msg_l = this.command.verify.markdown .split('\n')
+        var msg_l = this.command.markdown.split('\n')
+        var $msg_l = this.msg.split('\n')
         for (var i in $msg_l) {
             var msg_w = msg_l[i].split(' ')
             var $msg_w = $msg_l[i].split(' ')
@@ -71,7 +73,8 @@ const CommandItem = (function () {
                 }
             }
         }
-        return ret
+        this.props = ret;
+        return this;
     }
     CommandItem.prototype.execute = function (i) {}
     return CommandItem
