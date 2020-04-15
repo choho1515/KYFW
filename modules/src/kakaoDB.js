@@ -46,6 +46,7 @@ exports.KakaoDB = function () {
     }
     KakaoDB.prototype.get = function (table, index, args) {
         if (!args) args = {} // query(string), id(string), range(arr[int, bool])
+        if (table == 'chat_logs' && !index) index = this.index()
         if (Object.keys(this.col).indexOf(table) == -1) return false
         let cursor = !args.query ?
             this[this.col[table].loc].rawQuery("SELECT * FROM " + table + " WHERE " + (args.id ? args.id : this.col[table].index) + " = ?", [index]) :

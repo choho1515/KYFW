@@ -73,6 +73,11 @@ Broadcast.register('onMsg', function (i) {
     }
 })
 
+Broadcast.register('onEvent', function (event, args) {
+    Event.init()
+        .execute(event, args);
+})
+
 MainThread.start();
 
 function onStartCompile() {
