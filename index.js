@@ -48,8 +48,8 @@ Broadcast.register('onMsg', function (i) {
         if (now - chat.created_at > 3600) {
             return;
         } else if (now - chat.created_at > 10) {
-            this.active = false;
-        } else this.active = true;
+            active = false;
+        } else active = true;
 
         if (chat.v.isMine) return;
 
@@ -63,10 +63,11 @@ Broadcast.register('onMsg', function (i) {
 
         let user = KakaoDB.get('friends', chat.user_id);
 
-        if (!this.active) return
+        if (!active) return
 
-        Log.d(new Date().getTime() - time)
-        Log.d(chat.message)
+        //Handler.handle(chat, user, room)
+        //Log.d(new Date().getTime() - time)
+        //Log.d(chat.message)
     } catch (e) {
         Log.d('error!\nlineNumber: ' + e.lineNumber + '\nmessage : ' + e.message)
     }
@@ -84,4 +85,11 @@ const BLANK = " " + "\u200B".repeat(500) + '\n\n\n';
 
 String.prototype.format = function () {
     return this.replace(/\$(\d)/gi, (a, b) => Array.from(arguments)[b - 1]);
+}
+
+var msg_o = '!명령어 a b\nc'
+var $msg_o = '!명령어 $["a"] $["b"]\n$["c"]'
+
+function chkcmd(a, b) {
+
 }
