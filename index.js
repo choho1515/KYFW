@@ -39,43 +39,55 @@ Broadcast.register('onInterval', function () {
     Checker.check(KakaoDB)
 })
 
+const Command = new(modules.src.Command())
+Command.add({
+    id: 'test',
+    markdown: '!테스트 $["a"]',
+    verify: {
+        key: ['테스트']
+    },
+    execute: () => () => {
+        Log.d(chat)
+        //reply('OK')
+    }
+})
+
 Broadcast.register('onMsg', function (i) {
     try {
-        let time = new Date().getTime();
+
         let chat = KakaoDB.get('chat_logs', i);
-
-        let now = (time / 1000);
-        if (now - chat.created_at > 3600) {
-            return;
-        } else if (now - chat.created_at > 10) {
-            active = false;
-        } else active = true;
-
-        if (chat.v.isMine) return;
+        (function checkChat() {
+            if (new Date().getTime() / 1000 - chat.created_at > 10) return;
+            if (chat.v.isMine) return;
+        }).call(this);
 
         let room = KakaoDB.get('chat_rooms', chat.chat_id);
-        if (room.type != 'OM') return;
-        try {
-            room.name = room.private_meta.name
-        } catch (e) {}
-        if (!room.name) return;
-        if (room.name[0] != '●' && room.name[0] != '■') return;
+        (function checkRoom() {
+            if (room.type != 'OM') return;
+            try {
+                room.name = room.private_meta.name
+            } catch (e) {}
+            if (!room.name || (room.name[0] != '●' && room.name[0] != '■')) return;
+        }).call(this);
 
         let user = KakaoDB.get('friends', chat.user_id);
 
-        if (!active) return
+        let cmd = Command.get(chat.message)
+        if (cmd) Broadcast.send('onCmd', [cmd, chat, user, room])
 
-        //Handler.handle(chat, user, room)
-        //Log.d(new Date().getTime() - time)
-        //Log.d(chat.message)
     } catch (e) {
         Log.d('error!\nlineNumber: ' + e.lineNumber + '\nmessage : ' + e.message)
     }
 })
 
+Broadcast.register('onCmd', function (args) {
+    const [cmd] = args;
+    cmd.execute(args)
+})
+
+
 Broadcast.register('onEvent', function (event, args) {
-    Event.init()
-        .execute(event, args);
+    Event.init().execute(event, args);
 })
 
 MainThread.start();
@@ -90,11 +102,4 @@ const BLANK = " " + "\u200B".repeat(500) + '\n\n\n';
 
 String.prototype.format = function () {
     return this.replace(/\$(\d)/gi, (a, b) => Array.from(arguments)[b - 1]);
-}
-
-var msg_o = '!명령어 a b\nc'
-var $msg_o = '!명령어 $["a"] $["b"]\n$["c"]'
-
-function chkcmd(a, b) {
-
 }

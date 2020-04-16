@@ -3,7 +3,8 @@ exports.Command = function () {
         this.command = []
     }
     Command.prototype.add = function (prop) {
-        this.command[prop.id] = prop
+        this.command.push(prop)
+        return this
     }
     Command.prototype.get = function (msg) {
         let foo = new CommandItem(this.command, msg)
@@ -11,16 +12,28 @@ exports.Command = function () {
         if (!foo.checkCommand()) return null;
         let final = foo.checkMarkdown();
         if (!final) return null;
-        return {command: final.command, props: final.props}
+        return final
     }
-    return MainThread
+    return Command
 }
 
+/*
+command = {
+    id: 'sldkfjlsdafjasdf',
+    name: '',
+    desc: '',
+    setting: {
+        enabled: true,
+        permission: ''
+    },
+    markdown: ''
+}
+*/
 const CommandItem = (function () {
     function CommandItem(prop, msg) {
         this.data = prop;
         this.msg = msg;
-        this.$msg = msg.split(' ', 1);
+        this.$msg = msg.split(' ', 1)[0];
         this.command = null;
     }
     CommandItem.prototype.checkPrefix = function () {
@@ -30,15 +43,15 @@ const CommandItem = (function () {
     CommandItem.prototype.checkCommand = function () {
         const foo = this.data.find(_ => _.verify.key.indexOf(this.$msg.substr(1)) != -1);
         if (foo) {
-            this.command = foo;;
+            this.command = foo;
             return this;
         }
         return null;
     }
     CommandItem.prototype.checkMarkdown = function () {
         var ret = {}
-        var msg_l = this.command.markdown.split('\n')
-        var $msg_l = this.msg.split('\n')
+        var msg_l = this.msg.split('\n');
+        var $msg_l = this.command.markdown.split('\n');
         for (var i in $msg_l) {
             var msg_w = msg_l[i].split(' ')
             var $msg_w = $msg_l[i].split(' ')
@@ -76,17 +89,20 @@ const CommandItem = (function () {
         this.props = ret;
         return this;
     }
-    CommandItem.prototype.execute = function (i) {}
+    CommandItem.prototype.execute = function (args) {
+        //Log.d(JSON.stringify(args,null,4))
+        const [cmd, chat, user, room] = args;
+        const reply = function (msg) {
+            Bot.send(room.name, msg);
+        }
+        var exec =  cmd.command.execute();
+        /*
+        function() {
+            Log.d(chat)
+            //reply('OK')
+        }*/
+        //cmd.command.execute;
+        exec()
+    }
     return CommandItem
 }())
-
-command = {
-    id: 'sldkfjlsdafjasdf',
-    name: '',
-    desc: '',
-    setting: {
-        enabled: true,
-        permission: ''
-    },
-    markdown: ''
-}
