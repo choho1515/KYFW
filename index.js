@@ -46,7 +46,8 @@ Command.add({
     verify: {
         key: ['테스트']
     },
-    execute: () => () => {
+    execute() {
+        Log.d(this.execute)
         Log.d(chat)
         //reply('OK')
     }
@@ -82,7 +83,8 @@ Broadcast.register('onMsg', function (i) {
 
 Broadcast.register('onCmd', function (args) {
     const [cmd] = args;
-    cmd.execute(args)
+    const exec = cmd.command.execute
+    cmd.execute(args, exec)
 })
 
 

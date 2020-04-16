@@ -89,20 +89,19 @@ const CommandItem = (function () {
         this.props = ret;
         return this;
     }
-    CommandItem.prototype.execute = function (args) {
+    CommandItem.prototype.execute = function (args, exec) {
         //Log.d(JSON.stringify(args,null,4))
         const [cmd, chat, user, room] = args;
         const reply = function (msg) {
             Bot.send(room.name, msg);
         }
-        var exec =  cmd.command.execute();
+        exec()
         /*
         function() {
             Log.d(chat)
             //reply('OK')
         }*/
         //cmd.command.execute;
-        exec()
     }
     return CommandItem
 }())
