@@ -52,7 +52,8 @@ Broadcast.register('onInterval', function () {
 
 Broadcast.register('onMsg', function (i) {
     try {
-
+        //result: 50~100ms
+        //let time = new Date().getTime()
         let chat = KakaoDB.get('chat_logs', i);
         (function checkChat() {
             if (new Date().getTime() / 1000 - chat.created_at > 10) return;
@@ -70,17 +71,43 @@ Broadcast.register('onMsg', function (i) {
 
         let user = KakaoDB.get('friends', chat.user_id);
 
+        let args = {
+            KakaoDB: KakaoDB,
+            chat: chat,
+            user: user,
+            room: room,
+        };
+
+        U = StorageManager.acquire('user', [chat.user_id, chat.full_profile_image_url]).init(args);
+        R = StorageManager.acquire('room', [room.link_id]).init(args);
+        args.U = U;
+        args.R = R;
+        RU = StorageManager.acquire('roomuser', [room.link_id+'_'+U._id]).init(args);
+        args.RU = RU;
+
+        (function checkMsg() {
+            if (typeof chat.message != 'string') return;
+            if (chat.message.split(' ')[0] == ',') {
+                Broadcast.send('onEvent', args)
+            }
+        }).call(this);
+
         (function checkCmd() {
             if (typeof chat.message != 'string') return;
-            let cmd = Command.get(chat.message)
-            if (cmd) Broadcast.send('onCmd', {
-                KakaoDB: KakaoDB,
-                cmd: cmd,
-                chat: chat,
-                user: user,
-                room: room
-            })
+            args.cmd = Command.get(chat.message)
+            if (args.cmd) Broadcast.send('onCmd', args)
         }).call(this);
+
+        //Log.d(new Date().getTime() - time)
+
+        new java.lang.Thread({
+            run: function () {
+                java.lang.Thread.sleep(1000);
+                U.unmount();
+                R.unmount();
+                RU.unmount();
+            }
+        }).start();
 
     } catch (e) {
         Log.d('error!\nlineNumber: ' + e.lineNumber + '\nmessage : ' + e.message)
@@ -88,10 +115,18 @@ Broadcast.register('onMsg', function (i) {
 })
 
 Broadcast.register('onCmd', function (args) {
-    args.R = StorageManager.get('room')
-    args.U = StorageManager.get('user')
-    args.RU = StorageManager.get('roomuser')
     args.cmd.execute(args)
+})
+
+Broadcast.register('onEvent', function (args) {
+    let reply = function (msg) {
+        Bot.send(args.room.name, msg);
+    }
+    try {
+        reply(eval(args.chat.message.substr(args.chat.message.split(' ', 1)[0].length + 1)));
+    } catch (e) {
+        reply('error!\nlineNumber: ' + e.lineNumber + '\nmessage : ' + e.message);
+    }
 })
 
 /* to be implemented */

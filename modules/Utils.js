@@ -15,3 +15,13 @@ exports.makeRandom = function (type, obj) {
     }
     return text;
 }
+
+exports.pullFromArray = function (array, foo, type, len) {
+    len = len || 10;
+    const index = array.indexOf(foo);
+    if (index !== -1) array.splice(index, 1);
+    array.unshift(foo);
+    array.length = Math.min(array.length, len);
+    if (type) return index != -1 ? false : true;
+    return array;
+}

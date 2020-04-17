@@ -1,14 +1,18 @@
-const SETTING = require('./setting/kakaoDB');
-
+const SETTING = require('./setting/storageManager');
 const Utils = require('../Utils')
+
+String.prototype.format = function () {
+    return this.replace(/\$(\d)/gi, (a, b) => Array.from(arguments)[b - 1]);
+}
+
 
 exports.StorageManager = function () {
     function StorageManager() {
         this.keep = 10000 //10s
         this.storage = {}
 
-        this.column = SETTING.structure;
-        this.DB = android.database.sqlite.SQLiteDatabase.openOrCreateDatabase("/sdcard/katalkbot/ky.db", null, null);
+        this.column = SETTING.structure();
+        this.DB = android.database.sqlite.SQLiteDatabase.openOrCreateDatabase("/sdcard/katalkbot/kybot.db", null, null);
         let tableList = Object.keys(this.column);
 
         for (let i in tableList) {
@@ -68,12 +72,9 @@ exports.StorageManager = function () {
     }
 
     StorageManager.prototype.acquire = function (table, _id) {
-        let data = this.fetch(table, _id);
-
-        if (table == 'user') return new User(data);
-        if (table == 'room') return new Room(data);
-        if (table == 'roomuser') return new RoomUser(data);
-        
+        if (table == 'user') return new User(this, _id);
+        if (table == 'room') return new Room(this, _id);
+        if (table == 'roomuser') return new RoomUser(this, _id);
         return null;
     }
 
@@ -87,6 +88,7 @@ exports.StorageManager = function () {
 
         if (Array.isArray(_id)) {
             for (var i in _id) {
+                if (!_id[i]) continue;
                 temp = this.fetch('connect', _id[i], {
                     safemode: true
                 });
@@ -96,7 +98,11 @@ exports.StorageManager = function () {
                     break;
                 }
             }
-            if (!temp) return null;
+            if (!temp) {
+                if (args.$id) {
+                    _id = args.$id
+                } else return null;
+            }
         }
 
         if (this.storage[table] && this.storage[table][_id]) {
@@ -141,12 +147,14 @@ exports.StorageManager = function () {
             }
         })() : (() => {
             if (args.safemode || args.readonly) return null
-            let col = Object.keys(this.column[table])
-            let o = col.map(x => JSON.parse(JSON.stringify(this.column[table][x])))
+            let o = {},
+                col = Object.keys(this.column[table]);
+            for (let v in col)
+                o[col[v]] = JSON.parse(JSON.stringify(this.column[table][col[v]]))
             o._id = _id
             return {
                 content: this.mount(table, _id, o),
-                isNew: false
+                isNew: true
             }
         })()
     }
@@ -196,14 +204,15 @@ exports.StorageManager = function () {
         return true
     }
     StorageManager.prototype.addConnection = function (_id, target, type) {
-        let temp = this.fetch('connect', _id).content
+        if (!_id) return this;
+        let temp = this.fetch('connect', _id).content;
         if (temp) {
-            temp.target = target
-            temp.time = new Date().getTime()
-            temp.type = type
-        }
-        this.unmount('connect', _id)
-        return this
+            temp.target = target;
+            temp.time = new Date().getTime();
+            temp.type = type;
+        };
+        this.unmount('connect', _id);
+        return this;
     }
     StorageManager.prototype.check = function () {
         //시간 가져오기
@@ -255,149 +264,114 @@ exports.StorageManager = function () {
     return StorageManager
 }
 
+const Data = (function () {
+    function Data(SM, _id) {
+        this.SM = SM;
+        this._id = _id;
+        this.time = new Date().getTime();
+    }
+    Data.prototype.init = function (data) {
+        this.data = data;
+
+        this.getId();
+
+        this.props = this.SM.get(this.type, this._id, {$id: this.$id});
+        this.content = this.props.content;
+        this.$id = this.content._id;
+
+        if (this.props.isNew) this.generate();
+        this.update();
+        return this;
+    }
+    Data.prototype.unmount = function () {
+        this.SM.unmount(this.type, this.content._id);
+        return true;
+    }
+    return Data;
+})()
+
 
 const User = (function () {
     function User(props) {
-        this.props = props;
-        this.content = props.content
-        this.SM = props.SM
-        this.time = new Date().getTime()
+        this.type = 'user';
+        Data.apply(this, arguments)
     }
-    User.prototype.init = function (data) {
-        this.data = data;
-
-        if (this.props.isNew) this.generate();
-
-        if (!this.props.type == 'uid') {
-            this.SM.addConnection(chatData.user_id, pcode, 'uid');
-            this.data.uid.push(data.chat.user_id);
-        }
-        if (!this.props.type == 'img') this.SM.addConnection(chatData.user_id, pcode, 'img')
-            this.SM.addConnection(data.chat.user_id, this.content._id, 'uid');
-            this.data.uid.push(data.chat.user_id)
-
-        this.update();
+    User.prototype = Object.create(Data.prototype);
+    User.prototype.constructor = User;
+    User.prototype.getId = function () {
+        this.$id = Utils.makeRandom('eeeeee')
     }
     User.prototype.generate = function () {
-        const pcode = Utils.makeRandom('eeeeee');
+        const pcode = this.$id;
         const tag = Utils.makeRandom('nnnne');
 
-        
-        SM.addConnection(tag, pcode, 'tag')
-        
-        let sm = SM.get('user', pcode)
+        this.SM.addConnection(pcode, pcode, '_id')
+            .addConnection(this.data.chat.user_id, pcode, 'uid')
+            .addConnection(tag, pcode, 'tag')
+        if (this.data.user.original_profile_image_url) this.SM.addConnection(this.data.user.original_profile_image_url, pcode, 'img')
 
-        sm.uid = [String(chatData.user_id)]
-        sm.tag = tag
-        sm.joinDate = this.time
-
-        this.data = sm
+        this.content.uid = [String(this.data.chat.user_id)]
+        this.content.tag = tag
+        this.content.joinDate = this.time
 
         Log.d("USER: GENERATE " + pcode)
     }
     User.prototype.update = function () {
-        let data, target
-        try {
-            data = this.data.profileImage, target = userData.original_profile_image_url
-            data.unshift((_ => _ == -1 ? target : data.splice(_, 1)[0])(data.indexOf(target)))
-            data.length = Math.min(data.length, 10)
-            target && SM.addConnection(target, this.data._id)
-            data = this.data.nickname, target = userData.name
-            data.unshift((_ => _ == -1 ? target : data.splice(_, 1)[0])(data.indexOf(target)))
-            data.length = Math.min(data.length, 10)
-        } catch (e) {
-            Log.d(e + '\n' + JSON.stringify(this.data, null, 4) + '\n' + this.data.profileImage + '\n' + this.data.nickname)
+        if (!Utils.pullFromArray(this.content.uid, this.data.chat.user_id, true)) {
+            this.SM.addConnection(this.data.chat.user_id, this.content._id, 'uid');
         }
+        if (this.data.user.original_profile_image_url && !Utils.pullFromArray(this.content.profileImage, this.data.user.original_profile_image_url, true)) {
+            this.SM.addConnection(this.data.user.original_profile_image_url, this.content._id, 'img')
+        }
+        Utils.pullFromArray(this.content.nickname, this.data.user.name)
     }
     return User
 }())
 
 const Room = (function () {
-    function Room(SM, args) {
-        this.SM = SM
-        this.data = null
+    function Room(props) {
+        this.type = 'room';
+        Data.apply(this, arguments)
     }
-    Room.prototype.connect = function (roomData, chatData) {
-        this.data = SM.get('room', [roomData.id], {
-            safemode: true
-        })
-        if (this.data) {} else {
-            this.generate(roomData, chatData)
-        }
-        this.update(roomData, chatData)
-
-        return this
+    Room.prototype = Object.create(Data.prototype);
+    Room.prototype.constructor = Room;
+    Room.prototype.getId = function () {
+        this.$id = this.data.room.link_id;
     }
-    Room.prototype.generate = function (roomData, chatData) {
+    Room.prototype.generate = function () {
+        this.SM.addConnection(this.$id, this.$id, '_id')
+            .addConnection(this.data.room.id, this.$id, 'uid')
+            .addConnection(this.data.room.name, this.$id, 'name')
 
-        Log.d("ROOM: GENERATE " + roomData.link_id)
-        SM.addConnection(roomData.id, roomData.link_id)
-            .addConnection(roomData.name, roomData.link_id)
-        let sm = SM.get('room', roomData.link_id)
+        this.content.name = String(this.data.room.name)
 
-        sm.name = String(roomData.name)
-
-        this.data = sm
+        Log.d("ROOM: GENERATE " + this.$id)
     }
-    Room.prototype.update = function (userData, chatData) {
-
-    }
+    Room.prototype.update = function () {}
     return Room
 }())
 
 const RoomUser = (function () {
-    function RoomUser(SM, args) {
-        this.SM = SM
-        this.data = null
+    function RoomUser(props) {
+        this.type = 'roomuser';
+        Data.apply(this, arguments)
     }
-    RoomUser.prototype.connect = function (roomData, userData) {
-        //1.연결 가능한지 확인
-        //확인해야 하는거: uid, 프사
-        //uid의 경우: 단순 연결
-        this.data = SM.get('roomuser', [roomData._id + '_' + userData._id], {
-            safemode: true
-        })
-        if (this.data) {
-            //Log.d("ROOMUSER: uid CONNECT SUCCESS")
-            //uid 연결 성공시 프사, 닉변 감지
-        } else if (!this.data) {
-            //Log.d("ROOMUSER: uid CONNECT FAIL")
-            //2. 실패하면 새로 만들기
-            this.generate(roomData, userData)
-        }
-        this.update(roomData, userData)
-
-        return this
+    RoomUser.prototype = Object.create(Data.prototype);
+    RoomUser.prototype.constructor = Room;
+    RoomUser.prototype.getId = function () {
+        this.$id = this.data.R.content._id + '_' + this.data.U.content._id;
     }
-    RoomUser.prototype.generate = function (roomData, userData) {
-        Log.d("ROOMUSER: GENERATE " + roomData._id + '_' + userData._id)
-        SM.addConnection(roomData._id + '_' + userData._id, roomData._id + '_' + userData._id)
-        let sm = SM.get('roomuser', roomData._id + '_' + userData._id)
+    RoomUser.prototype.generate = function () {
+        this.SM.addConnection(this.$id, this.$id, '_id')
 
-        sm.roomid = roomData._id
-        sm.userid = userData._id
+        this.content.roomid = this.data.R.content._id
+        this.content.userid = this.data.U.content._id
 
-        this.data = sm
+        Log.d("ROOMUSER: GENERATE " + this.$id)
     }
-    RoomUser.prototype.update = function (roomData, userData) {
-        //일반멤버 아닌경우 (방/부방) 권한조정
-        /*
-        Log.d(JSON.stringify(userData))
-        if (userData.v.openlink.mt != 2) {
-            
-        } else this.data.permission = this.data.permissionDefault
-        */
-        let data, target
-        try {
-            data = this.data.profileImage, target = userData.profileImage[0]
-            data.unshift((_ => _ == -1 ? target : data.splice(_, 1)[0])(data.indexOf(target)))
-            data.length = Math.min(data.length, 10)
-            data = this.data.nickname, target = userData.nickname[0]
-            data.unshift((_ => _ == -1 ? target : data.splice(_, 1)[0])(data.indexOf(target)))
-            data.length = Math.min(data.length, 10)
-        } catch (e) {
-            Log.d(e + '\n' + JSON.stringify(this.data, null, 4) + '\n' + this.data.profileImage + '\n' + this.data.nickname)
-        }
+    RoomUser.prototype.update = function () {
+        Utils.pullFromArray(this.content.profileImage, this.data.U.content.profileImage[0])
+        Utils.pullFromArray(this.content.nickname, this.data.U.content.nickname[0])
     }
     return RoomUser
 }())
