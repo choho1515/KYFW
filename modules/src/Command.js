@@ -57,11 +57,13 @@ const CommandItem = (function () {
             var $msg_w = $msg_l[i].split(' ')
             for (var j in $msg_w) {
                 if (!msg_w[j]) return null;
+                if ($msg_w[j] == '$') continue;
                 if ($msg_w[j].startsWith('$')) {
                     var arg = JSON.parse($msg_w[j].substr(1))
                     if (j == $msg_w.length - 1) {
                         if (arg[1] == 'mc') {
                             ret[arg[0]] = msg_w.slice(j, msg_w.length).join(' ');
+                            if (i == $msg_l.length - 1 && msg_l.length != $msg_l.length) return null;
                             break;
                         } else {
                             if (msg_w.length != $msg_w.length) return null;
@@ -90,18 +92,10 @@ const CommandItem = (function () {
         return this;
     }
     CommandItem.prototype.execute = function (args, exec) {
-        //Log.d(JSON.stringify(args,null,4))
-        const [cmd, chat, user, room] = args;
-        const reply = function (msg) {
-            Bot.send(room.name, msg);
+        args.reply = function (msg) {
+            Bot.send(args.room.name, msg);
         }
-        exec()
-        /*
-        function() {
-            Log.d(chat)
-            //reply('OK')
-        }*/
-        //cmd.command.execute;
+        this.command.execute.call(args)
     }
     return CommandItem
 }())

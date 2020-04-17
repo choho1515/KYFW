@@ -1,3 +1,10 @@
+/*/* TODO *//*
+명령어 할당 이벤트랑 명령어 자체를 분리해서 외부에서 이벤트 실행 가능하게 하기
+그러려면 아마 이벤트 인자로 넘기는 cmd 를 다른이름으로 바꾸는게 유니버셜해보일듯
+*//* TODO /**/
+
+
+
 let pm = App.getContext().getSystemService(android.content.Context.POWER_SERVICE);
 let wakeLock = pm.newWakeLock(android.os.PowerManager.PARTIAL_WAKE_LOCK, "Bot");
 wakeLock.acquire();
@@ -5,16 +12,12 @@ wakeLock.acquire();
 importClass(android.database.sqlite.SQLiteDatabase);
 importClass(android.database.DatabaseUtils);
 importClass(org.jsoup.Jsoup);
-
 importClass(java.util.Timer);
 importClass(java.util.TimerTask);
-
 importClass(org.json.JSONObject);
 
 var Bot = BotManager.getCurrentBot();
 Bot.setCommandPrefix('!');
-
-//Bot.addListener(Event.COMMAND, onCmd)
 Bot.addListener(Event.MESSAGE, onMsg);
 Bot.addListener(Event.START_COMPILE, onStartCompile)
 
@@ -30,27 +33,21 @@ function onMsg(msg) {
 
 var modules = require('index');
 
-const MainThread = new(modules.main.MainThread());
-
 const KakaoDB = new(modules.src.KakaoDB());
+const StorageManager = new(modules.src.StorageManager());
+const EasyEval = new(modules.src.EasyEval());
 
+const MainThread = new(modules.main.MainThread());
 const Checker = new(modules.main.Checker(KakaoDB.index()));
-Broadcast.register('onInterval', function () {
-    Checker.check(KakaoDB)
-})
 
 const Command = new(modules.src.Command())
-Command.add({
-    id: 'test',
-    markdown: '!테스트 $["a"]',
-    verify: {
-        key: ['테스트']
-    },
-    execute() {
-        Log.d(this.execute)
-        Log.d(chat)
-        //reply('OK')
-    }
+for (let i in modules.main.eventStorage) {
+    modules.main.eventStorage[i](Command)
+}
+
+Broadcast.register('onInterval', function () {
+    StorageManager.check();
+    Checker.check(KakaoDB);
 })
 
 Broadcast.register('onMsg', function (i) {
@@ -73,8 +70,17 @@ Broadcast.register('onMsg', function (i) {
 
         let user = KakaoDB.get('friends', chat.user_id);
 
-        let cmd = Command.get(chat.message)
-        if (cmd) Broadcast.send('onCmd', [cmd, chat, user, room])
+        (function checkCmd() {
+            if (typeof chat.message != 'string') return;
+            let cmd = Command.get(chat.message)
+            if (cmd) Broadcast.send('onCmd', {
+                KakaoDB: KakaoDB,
+                cmd: cmd,
+                chat: chat,
+                user: user,
+                room: room
+            })
+        }).call(this);
 
     } catch (e) {
         Log.d('error!\nlineNumber: ' + e.lineNumber + '\nmessage : ' + e.message)
@@ -82,15 +88,18 @@ Broadcast.register('onMsg', function (i) {
 })
 
 Broadcast.register('onCmd', function (args) {
-    const [cmd] = args;
-    const exec = cmd.command.execute
-    cmd.execute(args, exec)
+    args.R = StorageManager.get('room')
+    args.U = StorageManager.get('user')
+    args.RU = StorageManager.get('roomuser')
+    args.cmd.execute(args)
 })
 
-
+/* to be implemented */
+/*
 Broadcast.register('onEvent', function (event, args) {
     Event.init().execute(event, args);
 })
+*/
 
 MainThread.start();
 
