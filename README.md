@@ -2,7 +2,9 @@
 
 a rhino-javascript chatbot framework
 
-<img src="https://upload.wikimedia.org/wikipedia/commons/b/bd/CC-BY-NC-SA.svg" width="100">
+note: this project is currently in alpha state, it might be unstable or lacking features.
+
+<img src="https://upload.wikimedia.org/wikipedia/commons/b/bd/CC-BY-NC-SA.svg" width="128">
 
 
 ### Prerequisites
