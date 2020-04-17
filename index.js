@@ -3,8 +3,6 @@
 그러려면 아마 이벤트 인자로 넘기는 cmd 를 다른이름으로 바꾸는게 유니버셜해보일듯
 *//* TODO /**/
 
-
-
 let pm = App.getContext().getSystemService(android.content.Context.POWER_SERVICE);
 let wakeLock = pm.newWakeLock(android.os.PowerManager.PARTIAL_WAKE_LOCK, "Bot");
 wakeLock.acquire();
@@ -79,8 +77,8 @@ Broadcast.register('onMsg', function (i) {
         };
 
         U = StorageManager.acquire('user', [chat.user_id, chat.full_profile_image_url]).init(args);
-        R = StorageManager.acquire('room', [room.link_id]).init(args);
         args.U = U;
+        R = StorageManager.acquire('room', [room.link_id]).init(args);
         args.R = R;
         RU = StorageManager.acquire('roomuser', [room.link_id+'_'+U._id]).init(args);
         args.RU = RU;
