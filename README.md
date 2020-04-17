@@ -2,11 +2,7 @@
 
 a rhino-javascript chatbot framework
 
-<<<<<<< HEAD
-<img src="https://upload.wikimedia.org/wikipedia/commons/b/bd/CC-BY-NC-SA.svg" width="200">
-=======
-<img src="https://upload.wikimedia.org/wikipedia/commons/b/bd/CC-BY-NC-SA.svg" width="400">
->>>>>>> 5556449dcfaf7defeeafece2e87ab53cb94cd5ff
+<img src="https://upload.wikimedia.org/wikipedia/commons/b/bd/CC-BY-NC-SA.svg" width="100">
 
 
 ### Prerequisites
