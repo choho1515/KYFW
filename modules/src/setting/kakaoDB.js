@@ -95,9 +95,8 @@ module.exports = {
             'open_link': {
                 loc: 'DB2',
                 index: 'id',
-                salt: [],
-                decrypt: [],
-                parse: ['v']
+                salt: [null, null],
+                execute: {}
             },
         }
     }

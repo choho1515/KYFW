@@ -1,8 +1,8 @@
 module.exports = function (Command) {
-    
+
     Command.add({
         id: 'test',
-        markdown: '$ $["content","mc"]',
+        regex: /^!(\S+) (\S+)$/,
         verify: {
             key: ['테스트']
         },

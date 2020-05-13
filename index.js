@@ -1,7 +1,6 @@
-/*/* TODO *//*
+/* TODO
 명령어 할당 이벤트랑 명령어 자체를 분리해서 외부에서 이벤트 실행 가능하게 하기
-그러려면 아마 이벤트 인자로 넘기는 cmd 를 다른이름으로 바꾸는게 유니버셜해보일듯
-*//* TODO /**/
+*/
 
 let pm = App.getContext().getSystemService(android.content.Context.POWER_SERVICE);
 let wakeLock = pm.newWakeLock(android.os.PowerManager.PARTIAL_WAKE_LOCK, "Bot");
@@ -33,7 +32,6 @@ var modules = require('index');
 
 const KakaoDB = new(modules.src.KakaoDB());
 const StorageManager = new(modules.src.StorageManager());
-const EasyEval = new(modules.src.EasyEval());
 
 const MainThread = new(modules.main.MainThread());
 const Checker = new(modules.main.Checker(KakaoDB.index()));
@@ -92,8 +90,8 @@ Broadcast.register('onMsg', function (i) {
 
         (function checkCmd() {
             if (typeof chat.message != 'string') return;
-            args.cmd = Command.get(chat.message)
-            if (args.cmd) Broadcast.send('onCmd', args)
+            args.args = Command.get(chat.message)
+            if (args.args) Broadcast.send('onCmd', args)
         }).call(this);
 
         //Log.d(new Date().getTime() - time)

@@ -8,10 +8,12 @@ exports.Command = function () {
     }
     Command.prototype.get = function (msg) {
         let foo = new CommandItem(this.command, msg)
-        if (!foo.checkPrefix()) return null;
+        //if (!foo.checkPrefix()) return null;
         if (!foo.checkCommand()) return null;
-        let final = foo.checkMarkdown();
+        let final = foo.checkRegex();
         if (!final) return null;
+        let index = foo.verify.key.indexOf(final[0])
+        if (index == -1) return null;
         return final
     }
     return Command
@@ -48,48 +50,8 @@ const CommandItem = (function () {
         }
         return null;
     }
-    CommandItem.prototype.checkMarkdown = function () {
-        var ret = {}
-        var msg_l = this.msg.split('\n');
-        var $msg_l = this.command.markdown.split('\n');
-        for (var i in $msg_l) {
-            var msg_w = msg_l[i].split(' ')
-            var $msg_w = $msg_l[i].split(' ')
-            for (var j in $msg_w) {
-                if (!msg_w[j]) return null;
-                if ($msg_w[j] == '$') continue;
-                if ($msg_w[j].startsWith('$')) {
-                    var arg = JSON.parse($msg_w[j].substr(1))
-                    if (j == $msg_w.length - 1) {
-                        if (arg[1] == 'mc') {
-                            ret[arg[0]] = msg_w.slice(j, msg_w.length).join(' ');
-                            if (i == $msg_l.length - 1 && msg_l.length != $msg_l.length) return null;
-                            break;
-                        } else {
-                            if (msg_w.length != $msg_w.length) return null;
-                            ret[arg[0]] = msg_w[j];
-                        }
-                    }
-                    if (i == $msg_l.length - 1) {
-                        if (arg[1] == 'ml') {
-                            ret[arg[0]] = msg_l.slice(i, msg_l.length).join('\n')
-                            return ret;
-                        } else {
-                            if (msg_l.length != $msg_l.length) return null;
-                            ret[arg[0]] = msg_w[j];
-                        }
-                    }
-                    if (arg[1] != 'mc' && arg[1] != 'ml' && arg[1]) {
-                        if (!RegExp(arg[1]).test(msg_w[j])) return null;
-                    }
-                    ret[arg[0]] = msg_w[j];
-                } else {
-                    if (msg_w[j] != $msg_w[j]) return null;
-                }
-            }
-        }
-        this.props = ret;
-        return this;
+    CommandItem.prototype.checkRegex = function () {
+        return this.command.regex.exec(this.msg)
     }
     CommandItem.prototype.execute = function (args, exec) {
         args.reply = function (msg) {

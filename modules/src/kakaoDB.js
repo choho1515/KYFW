@@ -27,6 +27,8 @@ exports.KakaoDB = function () {
             "su",
             "mount -o remount rw /data/data/com.kakao.talk/databases",
             "chmod -R 777 /data/data/com.kakao.talk/databases",
+            "mount -o remount rw /data/data/com.kakao.talk/shared_prefs",
+            "chmod -R 777 /data/data/com.kakao.talk/shared_prefs",
         ]).waitFor()
     }
     KakaoDB.prototype.init = function () {
