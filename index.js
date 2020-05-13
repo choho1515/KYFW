@@ -51,10 +51,8 @@ Broadcast.register('onMsg', function (i) {
         //result: 50~100ms
         //let time = new Date().getTime()
         let chat = KakaoDB.get('chat_logs', i);
-        (function checkChat() {
-            if (new Date().getTime() / 1000 - chat.created_at > 10) return;
-            if (chat.v.isMine) return;
-        }).call(this);
+        if (new Date().getTime() / 1000 - chat.created_at > 10) return;
+        if (chat.v.isMine) return;
 
         let room = KakaoDB.get('chat_rooms', chat.chat_id);
         (function checkRoom() {
@@ -90,7 +88,10 @@ Broadcast.register('onMsg', function (i) {
 
         (function checkCmd() {
             if (typeof chat.message != 'string') return;
-            args.args = Command.get(chat.message)
+            let cmd = Command.get(chat.message);
+            if (!cmd) return;
+            args.cmd = cmd[0];
+            args.args = cmd[1];
             if (args.args) Broadcast.send('onCmd', args)
         }).call(this);
 

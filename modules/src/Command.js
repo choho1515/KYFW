@@ -12,9 +12,7 @@ exports.Command = function () {
         if (!foo.checkCommand()) return null;
         let final = foo.checkRegex();
         if (!final) return null;
-        let index = foo.verify.key.indexOf(final[0])
-        if (index == -1) return null;
-        return final
+        return [foo, final]
     }
     return Command
 }
@@ -51,7 +49,9 @@ const CommandItem = (function () {
         return null;
     }
     CommandItem.prototype.checkRegex = function () {
-        return this.command.regex.exec(this.msg)
+        let arr = this.command.regex.exec(this.msg);
+        arr.shift();
+        return arr;
     }
     CommandItem.prototype.execute = function (args, exec) {
         args.reply = function (msg) {

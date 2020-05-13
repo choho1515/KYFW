@@ -7,7 +7,7 @@ module.exports = function (Command) {
             key: ['테스트']
         },
         execute() {
-            this.reply(this.cmd.props.content)
+            this.reply(this.args[1]);
         }
     })
 
